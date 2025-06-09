@@ -1,6 +1,7 @@
 use crate::strategies::api_trait::Api;
 use async_trait::async_trait;
 use serde::Deserialize;
+use tracing::info;
 
 // Define the data structures for the Bybit tickers response
 #[allow(dead_code)]
@@ -98,7 +99,8 @@ impl Api for BybitApi {
         // let text = response.text().await?;
 
         let tickers = json;
-        println!("tickers text {:#?}", tickers);
+        // println!("tickers text {:#?}", tickers);
+        info!("tickers {:#?}", tickers);
 
         Ok(())
     }

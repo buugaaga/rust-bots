@@ -1,2 +1,11 @@
-BYBIT_API_KEY = 1234
-BYBIT_SECRETE_KEY = 1234
+
+[api]
+bybit_api_key = "123"
+bybit_secret_key = "123"
+
+[logging]
+level = "info"       # Default log level: trace, debug, info, warn, error
+format = "pretty"    # Options: pretty, json, compact
+file_output = false  # Whether to output logs to a file
+log_file = "bot.log" # Log file path if file_output is true
+# modules = { api = "debug", strategies = "trace" }
