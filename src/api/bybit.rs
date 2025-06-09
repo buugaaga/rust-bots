@@ -45,12 +45,12 @@ struct Ticker {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Candlestick {
-    open: f64,
-    high: f64,
-    low: f64,
-    close: f64,
-    volume: f64,
-    timestamp: u64, // 5-minute interval
+    // open: f64,
+    // high: f64,
+    // low: f64,
+    // close: f64,
+    // volume: f64,
+    // timestamp: u64, // 5-minute interval
 }
 
 pub struct BybitApi {

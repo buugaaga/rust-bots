@@ -5,18 +5,13 @@ mod strategies;
 use api::bybit::BybitApi;
 use strategies::simple_strategy::SimpleStrategy;
 
-const API_KEY: &'static str = "some_key";
-const API_SECRET: &'static str = "some_secret";
-
 #[tokio::main]
 async fn main() {
     println!("Starting bot...");
 
-    let config = settings::get_config();
+    let settings = settings::get_settings();
 
-    println!("{:?}", config);
-
-    let api = BybitApi::new(API_KEY, API_SECRET);
+    let api = BybitApi::new(&settings.bybit_api_key, &settings.bybit_secret_key);
     let simple_strategy = SimpleStrategy;
 
     if let Err(err) = simple_strategy.run(&api).await {

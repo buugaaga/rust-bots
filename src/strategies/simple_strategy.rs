@@ -8,7 +8,7 @@ impl SimpleStrategy {
     pub async fn run<T: Api + Sync + Send>(&self, api: &T) -> Result<(), reqwest::Error> {
         let mut server_time_interval = interval(Duration::from_secs(15));
 
-        let mut tickets_interval = interval(Duration::from_secs(5));
+        let mut tickets_interval = interval(Duration::from_secs(7));
 
         server_time_interval.tick().await;
         tickets_interval.tick().await;
