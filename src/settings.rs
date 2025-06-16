@@ -10,17 +10,9 @@ pub struct Settings {
 
 #[derive(Debug, Deserialize)]
 pub struct ApiSettings {
-    // #[serde(rename = "BYBIT_API_KEY")]
     pub bybit_api_key: String,
-    // #[serde(rename = "BYBIT_SECRET_KEY")]
     pub bybit_secret_key: String,
 }
-
-// #[derive(Debug, Deserialize)]
-// pub struct Modules {
-//     api: String,
-//     strategies: String,
-// }
 
 #[derive(Debug, Deserialize)]
 pub struct LoggingSettings {
