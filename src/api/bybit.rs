@@ -99,7 +99,6 @@ impl Api for BybitApi {
         // let text = response.text().await?;
 
         let tickers = json;
-        // println!("tickers text {:#?}", tickers);
         info!("tickers {:#?}", tickers);
 
         Ok(())
