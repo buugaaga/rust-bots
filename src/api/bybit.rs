@@ -2,8 +2,8 @@ use crate::api::exchange::{Exchang, Kline};
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::Deserialize;
-use serde_json;
-use tracing::info;
+
+use tracing::{error, info};
 
 // Define the data structures for the Bybit tickers response
 #[allow(dead_code)]
@@ -16,52 +16,37 @@ struct BybitResponse<T> {
     time: u64,
 }
 
-#[allow(dead_code)]
-#[derive(Debug, Deserialize)]
-struct TickersResult {
-    category: String,
-    list: Vec<Ticker>,
-}
+// #[allow(dead_code)]
+// #[derive(Debug, Deserialize)]
+// struct TickersResult {
+//     category: String,
+//     list: Vec<Ticker>,
+// }
 
 #[derive(Debug, Deserialize)]
 struct BybitKlineResult {
-    category: String,
-    symbol: String,
-    list: Vec<BybitKline>,
+    // category: String,
+    // symbol: String,
+    list: Vec<Vec<String>>,
 }
 
-#[allow(dead_code)]
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Ticker {
-    symbol: String,
-    bid1_price: String,
-    bid1_size: String,
-    ask1_price: String,
-    ask1_size: String,
-    last_price: String,
-    prev_price_24h: String,
-    price_24h_pcnt: String,
-    high_price_24h: String,
-    low_price_24h: String,
-    turnover_24h: String,
-    volume_24h: String,
-    // index_price: String,
-    //
-    //
-    // Add other fields as needed
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct BybitKline {
-    open: f64,
-    high: f64,
-    low: f64,
-    close: f64,
-    volume: f64,
-    timestamp: i64, // 5-minute interval
-}
+// #[allow(dead_code)]
+// #[derive(Debug, Deserialize)]
+// #[serde(rename_all = "camelCase")]
+// struct Ticker {
+//     symbol: String,
+//     bid1_price: String,
+//     bid1_size: String,
+//     ask1_price: String,
+//     ask1_size: String,
+//     last_price: String,
+//     prev_price_24h: String,
+//     price_24h_pcnt: String,
+//     high_price_24h: String,
+//     low_price_24h: String,
+//     turnover_24h: String,
+//     volume_24h: String,
+// }
 
 pub struct BybitApi {
     api_key: String,
@@ -86,7 +71,6 @@ impl BybitApi {
 #[async_trait]
 impl Exchang for BybitApi {
     async fn fetch_server_time(&self) -> Result<()> {
-        // let url = "https://api.bybit.com/v5/market/time";
         let url = Self::build_url("/market/time");
         let response = reqwest::get(url).await?;
         let text = response.text().await?;
@@ -97,38 +81,46 @@ impl Exchang for BybitApi {
 
     async fn fetch_klines(&self, symbol: &str, interval: &str, limit: u32) -> Result<Vec<Kline>> {
         let endpoint = format!(
-            "/market/kline?category=inverse&symbol={}&interval={}&limit={}",
+            "/market/kline?category=spot&symbol={}&interval={}&limit={}",
             symbol, interval, limit
         );
         let url = Self::build_url(&endpoint);
+        info!("url {}", url);
         let response = reqwest::get(url).await?;
 
-        // Check if the request was successful
         if !response.status().is_success() {
-            eprintln!("Error: API returned status {}", response.status());
+            error!("Error: API returned status {}", response.status());
             return Ok(vec![]); // or handle the error differently
         }
 
-        // let json = response.json::<BybitResponse<BybitKlineResult>>().await?;
-        // let tickers = json;
-        // info!("tickers {:#?}", tickers);
-        let data: serde_json::Value = response.json().await?;
+        let data: BybitResponse<BybitKlineResult> = response.json().await?;
 
-        info!("raw data {:#?}", data);
+        let mut result: Vec<Kline> = Vec::new();
 
-        let klines: Vec<BybitKline> = serde_json::from_value(data["result"].clone())?;
+        for item in data.result.list {
+            if item.len() < 7 {
+                error!("Bybit item list must be more than 7");
+                return Ok(vec![]);
+            }
+            let timestamp = item[0].parse::<i64>()?;
+            let open = item[1].parse::<f64>()?;
+            let high = item[2].parse::<f64>()?;
+            let low = item[3].parse::<f64>()?;
+            let close = item[4].parse::<f64>()?;
+            let volume = item[5].parse::<f64>()?;
 
-        let result: Vec<Kline> = klines
-            .iter()
-            .map(|k| Kline {
-                open: k.open,
-                close: k.close,
-                low: k.low,
-                high: k.high,
-                volume: k.volume,
-                timestamp: k.timestamp,
+            result.push(Kline {
+                timestamp,
+                open,
+                close,
+                low,
+                high,
+                volume,
             })
-            .collect();
+        }
+
+        info!("result {:#?}", &result[1..3]);
+
         return Ok(result);
     }
 }
