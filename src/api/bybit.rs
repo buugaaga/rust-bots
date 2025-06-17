@@ -1,6 +1,8 @@
-use crate::strategies::api_trait::Api;
+use crate::api::exchange::{Exchang, Kline};
+use anyhow::Result;
 use async_trait::async_trait;
 use serde::Deserialize;
+use serde_json;
 use tracing::info;
 
 // Define the data structures for the Bybit tickers response
@@ -19,6 +21,13 @@ struct BybitResponse<T> {
 struct TickersResult {
     category: String,
     list: Vec<Ticker>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BybitKlineResult {
+    category: String,
+    symbol: String,
+    list: Vec<BybitKline>,
 }
 
 #[allow(dead_code)]
@@ -45,13 +54,13 @@ struct Ticker {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Candlestick {
-    // open: f64,
-    // high: f64,
-    // low: f64,
-    // close: f64,
-    // volume: f64,
-    // timestamp: u64, // 5-minute interval
+struct BybitKline {
+    open: f64,
+    high: f64,
+    low: f64,
+    close: f64,
+    volume: f64,
+    timestamp: i64, // 5-minute interval
 }
 
 pub struct BybitApi {
@@ -69,15 +78,16 @@ impl BybitApi {
         }
     }
 
-    fn build_url(endpoing: &str) -> String {
-        return format!("{}{}", Self::BASE_URL, endpoing.to_string());
+    fn build_url(endpoint: &str) -> String {
+        return format!("{}{}", Self::BASE_URL, endpoint.to_string());
     }
 }
 
 #[async_trait]
-impl Api for BybitApi {
-    async fn get_server_time(&self) -> Result<(), reqwest::Error> {
-        let url = "https://api.bybit.com/v5/market/time";
+impl Exchang for BybitApi {
+    async fn fetch_server_time(&self) -> Result<()> {
+        // let url = "https://api.bybit.com/v5/market/time";
+        let url = Self::build_url("/market/time");
         let response = reqwest::get(url).await?;
         let text = response.text().await?;
         println!("server time: {}", text);
@@ -85,24 +95,40 @@ impl Api for BybitApi {
         Ok(())
     }
 
-    async fn get_tickers(&self) -> Result<(), reqwest::Error> {
-        let url = Self::build_url("/market/tickers?category=spot&symbol=ATHUSDT");
+    async fn fetch_klines(&self, symbol: &str, interval: &str, limit: u32) -> Result<Vec<Kline>> {
+        let endpoint = format!(
+            "/market/kline?category=inverse&symbol={}&interval={}&limit={}",
+            symbol, interval, limit
+        );
+        let url = Self::build_url(&endpoint);
         let response = reqwest::get(url).await?;
 
         // Check if the request was successful
         if !response.status().is_success() {
             eprintln!("Error: API returned status {}", response.status());
-            return Ok(()); // or handle the error differently
+            return Ok(vec![]); // or handle the error differently
         }
 
-        let json = response.json::<BybitResponse<TickersResult>>().await?;
-        // let text = response.text().await?;
+        // let json = response.json::<BybitResponse<BybitKlineResult>>().await?;
+        // let tickers = json;
+        // info!("tickers {:#?}", tickers);
+        let data: serde_json::Value = response.json().await?;
 
-        let tickers = json;
-        info!("tickers {:#?}", tickers);
+        info!("raw data {:#?}", data);
 
-        Ok(())
+        let klines: Vec<BybitKline> = serde_json::from_value(data["result"].clone())?;
+
+        let result: Vec<Kline> = klines
+            .iter()
+            .map(|k| Kline {
+                open: k.open,
+                close: k.close,
+                low: k.low,
+                high: k.high,
+                volume: k.volume,
+                timestamp: k.timestamp,
+            })
+            .collect();
+        return Ok(result);
     }
-
-    // async fn get_candles(&self) -> &Vec<Candlestick> {}
 }
