@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::api::exchange::Exchange;
 use tokio::{select, time::interval};
 use tracing::{error, info};
@@ -36,22 +38,32 @@ impl<T: Exchange> DivergenceStrategy<T> {
 
     pub async fn run(&self) {
         let symbol = "BTCUSDT";
-        let interval = "60";
+        let kline_interval = "30";
         let limit: u32 = 300;
 
-        match self.exchange.fetch_klines(&symbol, &interval, limit).await {
-            Ok(klines) => info!("klines in run {:?}", &klines[0..3]),
-            Err(err) => error!("error in fetch klines in run fn: {}", err),
+        let mut timer = interval(Duration::from_secs(30));
+
+        loop {
+            timer.tick().await;
+
+            match self
+                .exchange
+                .fetch_klines(&symbol, &kline_interval, limit)
+                .await
+            {
+                Ok(klines) => info!("klines in run {:?}", &klines[0..3]),
+                Err(err) => error!("Ошибка ёпта!!!: {}", err),
+            }
         }
     }
 
-    async fn fetch_klines_periodically(&self, period: u32) {
-        // let fetch_klines_interval = interval(period);
-        todo!()
-        // loop {
-        //     select! {
+    // async fn fetch_klines_periodically(&self, period: u32) {
+    //     // let fetch_klines_interval = interval(period);
+    //     todo!()
+    //     // loop {
+    //     //     select! {
 
-        //     }
-        // }
-    }
+    //     //     }
+    //     // }
+    // }
 }
