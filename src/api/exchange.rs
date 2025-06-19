@@ -11,10 +11,12 @@ pub struct Kline {
     pub timestamp: i64,
 }
 
+/// Exhange trait
 #[async_trait]
-pub trait Exchang: Sync + Send {
+pub trait Exchange: Sync + Send {
     async fn fetch_server_time(&self) -> Result<()>;
 
+    // fetch klines
     async fn fetch_klines(&self, symbol: &str, interval: &str, limit: u32) -> Result<Vec<Kline>>;
 
     // pub fn create_order(&self, symbol: &str, )

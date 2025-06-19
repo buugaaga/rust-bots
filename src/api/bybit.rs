@@ -1,4 +1,4 @@
-use crate::api::exchange::{Exchang, Kline};
+use crate::api::exchange::{Exchange, Kline};
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::Deserialize;
@@ -15,13 +15,6 @@ struct BybitResponse<T> {
     result: T,
     time: u64,
 }
-
-// #[allow(dead_code)]
-// #[derive(Debug, Deserialize)]
-// struct TickersResult {
-//     category: String,
-//     list: Vec<Ticker>,
-// }
 
 #[derive(Debug, Deserialize)]
 struct BybitKlineResult {
@@ -48,6 +41,7 @@ struct BybitKlineResult {
 //     volume_24h: String,
 // }
 
+#[warn()]
 pub struct BybitApi {
     api_key: String,
     api_secret: String,
@@ -69,7 +63,7 @@ impl BybitApi {
 }
 
 #[async_trait]
-impl Exchang for BybitApi {
+impl Exchange for BybitApi {
     async fn fetch_server_time(&self) -> Result<()> {
         let url = Self::build_url("/market/time");
         let response = reqwest::get(url).await?;
@@ -118,8 +112,6 @@ impl Exchang for BybitApi {
                 volume,
             })
         }
-
-        info!("result {:#?}", &result[1..3]);
 
         return Ok(result);
     }

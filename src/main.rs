@@ -7,7 +7,7 @@ use api::bybit::BybitApi;
 use strategies::simple_strategy::SimpleStrategy;
 use tracing::{error, info};
 
-use crate::api::exchange::Exchang;
+use crate::{api::exchange::Exchange, strategies::divergence_strategy::DivergenceStrategy};
 
 #[tokio::main]
 async fn main() {
@@ -17,14 +17,18 @@ async fn main() {
 
     info!("Starting bot...: {}", "1,2,3");
 
-    let api = BybitApi::new(&settings.api.bybit_api_key, &settings.api.bybit_secret_key);
-    let simple_strategy = SimpleStrategy;
+    let bybit_api = BybitApi::new(&settings.api.bybit_api_key, &settings.api.bybit_secret_key);
 
-    let symbol = "BTCUSDT";
-    let interval = "60";
-    let limit: u32 = 300;
+    let divergence_strategy = DivergenceStrategy::new(bybit_api);
 
-    let klines = api.fetch_klines(&symbol, &interval, limit).await;
+    divergence_strategy.run().await;
+    // let simple_strategy = SimpleStrategy;
+
+    // let symbol = "BTCUSDT";
+    // let interval = "60";
+    // let limit: u32 = 300;
+
+    // let klines = api.fetch_klines(&symbol, &interval, limit).await;
     // let klines = api::bybit::BybitApi::fetch_klines(&symbol, &interval, &limit);
 
     // println!("klines {:#?}", klines);
