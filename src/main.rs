@@ -3,7 +3,7 @@ mod logging;
 mod settings;
 mod strategies;
 
-use api::bybit::BybitApi;
+use api::bybit::bybit::BybitApi;
 use tracing::info;
 
 use crate::strategies::divergence_strategy::DivergenceStrategy;
