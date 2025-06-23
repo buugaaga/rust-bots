@@ -170,7 +170,7 @@ impl Exchange for BybitApi {
             &recv_window,
         ) {
             Ok(s) => s,
-            Err(e) => Err(),
+            Err(e) => return Err(ExchangeError::new("generate_post_signature error", 500)),
         };
 
         let url = Self::build_url(&endpoint_path);
