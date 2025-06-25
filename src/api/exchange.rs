@@ -1,9 +1,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-use std::fmt;
 use strum_macros::Display as EnumDisplay;
+
+use crate::api::exchange_error::ExchangeError;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Kline {
@@ -19,33 +19,6 @@ pub struct Kline {
 pub struct CreateOrderResult {
     pub order_id: String,
 }
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ExchangeError {
-    error_code: u32,
-    error_msg: String,
-}
-
-impl ExchangeError {
-    pub fn new(msg: &str, code: u32) -> Self {
-        Self {
-            error_msg: msg.to_string(),
-            error_code: code,
-        }
-    }
-}
-impl fmt::Display for ExchangeError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            formatter,
-            "Api Error  message {}, code {}",
-            self.error_msg, self.error_code
-        )?;
-        Ok(())
-    }
-}
-
-impl Error for ExchangeError {}
 
 #[derive(EnumDisplay)]
 pub enum CreateOrderSide {

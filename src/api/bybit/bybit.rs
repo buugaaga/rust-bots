@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use crate::api::{
     bybit::utils,
-    exchange::{CreateOrderResult, CreateOrderSide, Exchange, ExchangeError, Kline},
+    exchange::{CreateOrderResult, CreateOrderSide, Exchange, Kline},
+    // exchange_error::ExchangeError,
 };
-use anyhow::Result;
+use anyhow::{Error, Result};
 use async_trait::async_trait;
 use chrono::Utc;
 use reqwest::header::{HeaderMap, HeaderValue};
@@ -28,24 +31,6 @@ struct BybitKlineResult {
     // symbol: String,
     list: Vec<Vec<String>>,
 }
-
-// #[allow(dead_code)]
-// #[derive(Debug, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// struct Ticker {
-//     symbol: String,
-//     bid1_price: String,
-//     bid1_size: String,
-//     ask1_price: String,
-//     ask1_size: String,
-//     last_price: String,
-//     prev_price_24h: String,
-//     price_24h_pcnt: String,
-//     high_price_24h: String,
-//     low_price_24h: String,
-//     turnover_24h: String,
-//     volume_24h: String,
-// }
 
 pub struct BybitApi {
     api_key: String,
@@ -144,7 +129,7 @@ impl Exchange for BybitApi {
         price: &str,
         take_profit: &str,
         stop_loss: &str,
-    ) -> Result<CreateOrderResult, ExchangeError> {
+    ) -> Result<CreateOrderResult> {
         let client = reqwest::Client::new();
 
         let endpoint_path = "/order/create".to_string();
@@ -170,7 +155,10 @@ impl Exchange for BybitApi {
             &recv_window,
         ) {
             Ok(s) => s,
-            Err(e) => return Err(ExchangeError::new("generate_post_signature error", 500)),
+            Err(e) => {
+                error!("generate_post_signature error {:?}", e);
+                return Error(e);
+            } // Err(e) => return Err(ExchangeError::new("generate_post_signature error", 500)),
         };
 
         let url = Self::build_url(&endpoint_path);
@@ -178,12 +166,26 @@ impl Exchange for BybitApi {
             .post(url)
             .json(&body)
             // .body(&body)
-            .header("X-BAPI-API-KEY", self.api_key)
+            .header("X-BAPI-API-KEY", self.api_key.clone())
             .header("X-BAPI-SING", signature)
             .header("Context-Type", "application/json")
             .header("X-BAPI-TIMESTAMP", timestamp)
             .header("X-BAPI-RECV-WINDOW", recv_window)
-            .send();
+            .send()
+            .await;
+
+        let response = match res {
+            Ok(r) => r,
+            Err(e) => return Err(e), // Err(e) => return Err(ExchangeError::new("Create limit order", 500)),
+        };
+
+        let response_map: HashMap<String, String> = response.json().await?;
+
+        info!("create order result {:?}", response_map);
+        // let create_order_result = CreateOrderResult {
+        //     order_id: response_map.get("result"),
+        // };
+        // let order_id = CreateOrderResult { order_id}
         todo!()
     }
 }
